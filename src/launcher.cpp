@@ -212,6 +212,7 @@ void PrintUsage() {
         << L"RDPScale options:\n"
         << L"  /scale:N   UI scale in percent (100..500)\n"
         << L"  /dpi:N     effective DPI directly (96..480)\n"
+        << L"  /trace     log DPI API calls to RDPScale-trace.log\n"
         << L"  /?         show this help\n\n"
         << L"All other arguments are passed unchanged to mstsc.exe.\n";
 }
@@ -226,6 +227,7 @@ int wmain(int argc, wchar_t* argv[]) {
 
     std::optional<unsigned> dpi;
     std::optional<unsigned> scale;
+    bool trace = false;
     std::vector<std::wstring> mstscArgs;
 
     for (int i = 1; i < argc; ++i) {
@@ -233,6 +235,11 @@ int wmain(int argc, wchar_t* argv[]) {
         if (arg == L"/?" || arg == L"--help" || arg == L"-h") {
             PrintUsage();
             return 0;
+        }
+
+        if (_wcsicmp(arg.c_str(), L"/trace") == 0) {
+            trace = true;
+            continue;
         }
 
         if (StartsWithInsensitive(arg, L"/scale:") || StartsWithInsensitive(arg, L"--scale=")) {
@@ -315,10 +322,24 @@ int wmain(int argc, wchar_t* argv[]) {
         return 4;
     }
 
+    const std::wstring tracePath = exeDir + L"\\RDPScale-trace.log";
+    if (trace) {
+        DeleteFileW(tracePath.c_str());
+        HANDLE traceFile = CreateFileW(
+            tracePath.c_str(), GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (traceFile != INVALID_HANDLE_VALUE) {
+            CloseHandle(traceFile);
+        }
+    }
+
     ScopedEnvironmentVariable dpiEnv(L"RDPSCALE_DPI", std::to_wstring(*dpi));
+    ScopedEnvironmentVariable traceEnv(
+        L"RDPSCALE_TRACE_PATH", trace ? tracePath : L"");
     ScopedEnvironmentVariable readyEnv(L"RDPSCALE_READY_EVENT", readyEventName);
     ScopedEnvironmentVariable failedEnv(L"RDPSCALE_FAILED_EVENT", failedEventName);
-    if (!dpiEnv.ok() || !readyEnv.ok() || !failedEnv.ok()) {
+    if (!dpiEnv.ok() || !traceEnv.ok() || !readyEnv.ok() || !failedEnv.ok()) {
         PrintWin32Error(L"SetEnvironmentVariableW");
         return 4;
     }
@@ -376,6 +397,9 @@ int wmain(int argc, wchar_t* argv[]) {
         std::wcout << L" (" << *scale << L"%)";
     }
     std::wcout << L"\n";
+    if (trace) {
+        std::wcout << L"RDPScale: DPI trace: " << tracePath << L"\n";
+    }
 
     return 0;
 }
