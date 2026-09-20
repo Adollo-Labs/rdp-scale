@@ -171,9 +171,17 @@ HRESULT WINAPI HookGetScaleFactorForMonitor(
     DEVICE_SCALE_FACTOR* factor) {
 
     const HRESULT hr = g_originalGetScaleFactorForMonitor(monitor, factor);
+    const int originalFactor =
+        (SUCCEEDED(hr) && factor) ? static_cast<int>(*factor) : -1;
+
+    if (SUCCEEDED(hr) && factor) {
+        *factor = static_cast<DEVICE_SCALE_FACTOR>(175);
+    }
+
     Trace(
-        "GetScaleFactorForMonitor hr=0x%08lx -> %d",
+        "GetScaleFactorForMonitor hr=0x%08lx original=%d returned=%d",
         static_cast<unsigned long>(hr),
+        originalFactor,
         factor ? static_cast<int>(*factor) : -1);
     return hr;
 }
