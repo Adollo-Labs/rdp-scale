@@ -147,23 +147,35 @@ HRESULT WINAPI HookGetDpiForMonitor(
 }
 
 UINT WINAPI HookGetDpiForWindow(HWND hwnd) {
-    const UINT value = g_originalGetDpiForWindow(hwnd);
-    Trace("GetDpiForWindow hwnd=%p -> %u", hwnd, value);
-    return value;
+    const UINT original = g_originalGetDpiForWindow(hwnd);
+    Trace(
+        "GetDpiForWindow hwnd=%p original=%u returned=%u",
+        hwnd,
+        original,
+        g_effectiveDpi);
+    return g_effectiveDpi;
 }
 
 UINT WINAPI HookGetDpiForSystem() {
-    const UINT value = g_originalGetDpiForSystem();
-    Trace("GetDpiForSystem -> %u", value);
-    return value;
+    const UINT original = g_originalGetDpiForSystem();
+    Trace(
+        "GetDpiForSystem original=%u returned=%u",
+        original,
+        g_effectiveDpi);
+    return g_effectiveDpi;
 }
 
 int WINAPI HookGetDeviceCaps(HDC hdc, int index) {
-    const int value = g_originalGetDeviceCaps(hdc, index);
+    const int original = g_originalGetDeviceCaps(hdc, index);
     if (index == LOGPIXELSX || index == LOGPIXELSY) {
-        Trace("GetDeviceCaps index=%d -> %d", index, value);
+        Trace(
+            "GetDeviceCaps index=%d original=%d returned=%u",
+            index,
+            original,
+            g_effectiveDpi);
+        return static_cast<int>(g_effectiveDpi);
     }
-    return value;
+    return original;
 }
 
 HRESULT WINAPI HookGetScaleFactorForMonitor(
@@ -171,17 +183,9 @@ HRESULT WINAPI HookGetScaleFactorForMonitor(
     DEVICE_SCALE_FACTOR* factor) {
 
     const HRESULT hr = g_originalGetScaleFactorForMonitor(monitor, factor);
-    const int originalFactor =
-        (SUCCEEDED(hr) && factor) ? static_cast<int>(*factor) : -1;
-
-    if (SUCCEEDED(hr) && factor) {
-        *factor = static_cast<DEVICE_SCALE_FACTOR>(175);
-    }
-
     Trace(
-        "GetScaleFactorForMonitor hr=0x%08lx original=%d returned=%d",
+        "GetScaleFactorForMonitor hr=0x%08lx -> %d",
         static_cast<unsigned long>(hr),
-        originalFactor,
         factor ? static_cast<int>(*factor) : -1);
     return hr;
 }
