@@ -13,3 +13,13 @@ This is a cross-project discovery rule only; it does not change this application
 ## Interrupted ChatGPT work: recover before replay
 
 After a ChatGPT stream error, UI Retry, lost tool response, restored context, or a continuation of an earlier attempt, follow the [Adollo Labs interrupted-work recovery contract](https://github.com/Adollo-Labs/.github/blob/main/docs/CHATGPT_INTERRUPTED_WORK_RECOVERY.md) **before repeating any external action**. Recover the original durable job/request/run identity and inspect its owning system first. A missing chat response is not evidence that dispatch, upload, install, or another side effect failed. Completed work is reported, pending work is reconciled under the same identity, and ambiguous identity blocks duplicate writes. A genuinely new explicit user request remains new work according to the product contract.
+
+## Interactive execution: use Adollo Shell Bus
+
+For interactive ChatGPT execution, follow the organization-wide [Adollo Shell Bus execution contract](https://github.com/Adollo-Labs/.github/blob/main/docs/CHATGPT_SHELL_BUS_EXECUTION.md).
+
+- If the user explicitly says **Shell**, use `Adollo-Labs/shell-bus`.
+- If the user explicitly says **Agent**, use `Adollo-Labs/agent-control`.
+- When no lane is named, prefer **Shell Bus** for interactive inspect/run/build/test/modify-and-check work in the current conversation, and **Agent Control** only when durability, recovery, deployment, migration, durable receipts/leases, acceptance worktrees, or resident supervision are part of the requirement.
+
+Complexity by itself does not make a task an Agent job. The owning repository's own safety and product contracts remain authoritative.
